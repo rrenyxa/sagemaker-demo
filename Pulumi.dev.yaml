@@ -1,0 +1,9 @@
+encryptionsalt: v1:YfLFJPoNPHw=:v1:1RWN9cdh/+EX1e8r:NgvnYCQYc2kv2HexLZXidSfHrwlITg==
+config:
+  aws:region: eu-north-1
+  sagemaker-demo:projectName: sagemaker-demo
+  sagemaker-demo:pipelineName: PenguinTrainingPipeline
+  sagemaker-demo:artifactsPrefix: sagemaker-demo
+  sagemaker-demo:rawDataKey: sagemaker-demo/raw/penguins.csv
+  sagemaker-demo:forceDestroyBucket: True
+  sagemaker-demo:modelPackageGroupName: PenguinClassifierPackageGroup

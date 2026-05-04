@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+build/
+dist/
+wheels/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local config and secrets
+.env
+.env.*
+!.env.example
+
+# Pulumi local files
+Pulumi.*.yaml.bak
+.pulumi/
+.pulumi-local/
+
+# DVC local cache/state
+.dvc/cache/
+.dvc/tmp/
+.dvc/config.local
+
+# Data managed by DVC or generated locally
+data/raw/*.csv
+!data/raw/*.csv.dvc
+data/train/
+data/validation/
+data/test/
+data/model/
+data/preprocessor/
+data/evaluation/
+data/metadata/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log

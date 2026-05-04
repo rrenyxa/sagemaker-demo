@@ -1,0 +1,10 @@
+name: sagemaker-demo
+description: IaC for model preproces,train,register,deploy via sagemaker pipelines
+runtime:
+  name: python
+  options:
+    toolchain: uv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-python

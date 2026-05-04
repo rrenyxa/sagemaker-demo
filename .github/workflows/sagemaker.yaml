@@ -1,0 +1,97 @@
+name: sagemaker-demo
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_endpoint:
+        description: "Deploy endpoint after successful training"
+        required: false
+        default: false
+        type: boolean
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+env:
+  AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+  PULUMI_STACK: ${{ vars.PULUMI_STACK }}
+  PULUMI_STATE: ${{ vars.PULUMI_STATE }}
+
+
+jobs:
+  create_infrastructure:
+    name: create_infrastructure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: ".python-version" 
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+
+      - name: Install Pulumi CLI
+        uses: pulumi/actions@v6
+
+      - name: Install project dependencies
+        run: uv sync --locked
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+      
+      - name: Deploy the Pulumi Stack
+        env: 
+          PULUMI_CONFIG_PASSPHRASE: ${{secrets.PULUMI_CONFIG_PASSPHRASE}}
+        run: |
+          pulumi login "$PULUMI_STATE"
+          pulumi stack select "$PULUMI_STACK" || pulumi stack init "$PULUMI_STACK"
+          pulumi up --yes --refresh
+
+      - name: Export pulumi outputs
+        env:
+          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+        run: |
+          echo "SAGEMAKER_ROLE_ARN=$(pulumi stack output sagemaker_role_arn)" >> "$GITHUB_ENV"
+          echo "SAGEMAKER_BUCKET=$(pulumi stack output sagemaker_bucket)" >> "$GITHUB_ENV"
+          echo "SAGEMAKER_INPUT_DATA=$(pulumi stack output sagemaker_input_data)" >> "$GITHUB_ENV"
+          echo "SAGEMAKER_PIPELINE_NAME=$(pulumi stack output sagemaker_pipeline_name)" >> "$GITHUB_ENV"
+          echo "SAGEMAKER_MODEL_PACKAGE_GROUP=$(pulumi stack output sagemaker_model_package_group)" >> "$GITHUB_ENV"
+          echo "SAGEMAKER_ARTIFACTS_PREFIX=$(pulumi stack output sagemaker_artifacts_prefix)" >> "$GITHUB_ENV"
+
+      - name: Pull raw data from DVC
+        run: uv run dvc pull data/raw/penguins.csv
+
+      - name: Upload raw data to SageMaker input path
+        run: aws s3 cp data/raw/penguins.csv "$SAGEMAKER_INPUT_DATA"
+      
+      - name: Upsert and start SageMaker pipeline
+        env:
+          SAGEMAKER_MODEL_APPROVAL_STATUS: Approved
+          SAGEMAKER_ACCURACY_THRESHOLD: "0.8"
+          SAGEMAKER_MAX_DEPTH: "10"
+          SAGEMAKER_N_ESTIMATORS: "100"
+          SAGEMAKER_PROCESSING_INSTANCE_TYPE: ml.t3.medium
+          SAGEMAKER_TRAINING_INSTANCE_TYPE: ml.m5.large
+        run: uv run run-pipeline
+
+      - name: Wait for SageMaker pipeline
+        env:
+          SAGEMAKER_PIPELINE_POLL_SECONDS: "60"
+          SAGEMAKER_PIPELINE_TIMEOUT_SECONDS: "7200"
+        run: uv run wait-pipeline
+
+      - name: Deploy endpoint from latest approved model
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_endpoint == true }}
+        run: uv run deploy-endpoint

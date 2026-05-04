@@ -1,0 +1,26 @@
+# Git / Python internals
+.git/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Infrastructure and CI files are not DVC data
+.github/
+infra/
+Pulumi*.yaml
+
+# Generated local outputs; SageMaker owns cloud artifacts
+data/train/
+data/validation/
+data/test/
+data/model/
+data/preprocessor/
+data/evaluation/
+data/metadata/
+
+# Notebooks / IDE
+.ipynb_checkpoints/
+.vscode/
+.idea/
