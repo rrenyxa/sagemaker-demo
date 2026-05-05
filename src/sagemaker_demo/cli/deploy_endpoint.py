@@ -278,7 +278,7 @@ def main() -> None:
     role_arn = get_required_env("SAGEMAKER_ROLE_ARN")
     model_package_group_name = get_required_env("SAGEMAKER_MODEL_PACKAGE_GROUP")
     endpoint_name = os.getenv("SAGEMAKER_ENDPOINT_NAME", "penguin-classifier")
-    instance_type = os.getenv("SAGEMAKER_ENDPOINT_INSTANCE_TYPE", "ml.m5.large")
+    instance_type = os.getenv("SAGEMAKER_ENDPOINT_INSTANCE_TYPE", "ml.c5.xlarge")
     initial_instance_count = get_int_env("SAGEMAKER_ENDPOINT_INITIAL_INSTANCE_COUNT", 1)
     variant_name = os.getenv("SAGEMAKER_ENDPOINT_VARIANT_NAME", "variant-1")
 
